@@ -1,1 +1,180 @@
 # Pertemuan-Ke-4-lampu-on-off
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Toggle Lamp - Klik untuk Hidup/Mati</title>
+  <style>
+    :root{
+      --bg:#0f172a;
+      --card:#0b1220;
+      --muted:#9aa4bd;
+      --accent:#ffd166;
+      --glass:#e6eef9;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg,var(--bg) 0%, #071023 100%);
+      color:var(--glass);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.15));
+      border-radius:16px;
+      padding:28px;
+      width:360px;
+      text-align:center;
+      box-shadow: 0 8px 30px rgba(2,6,23,0.6);
+    }
+
+    h1{margin:0 0 12px;font-size:18px}
+    p{margin:0 0 22px;color:var(--muted);font-size:13px}
+
+    /* Bulb area */
+    .lamp-wrap{
+      display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center
+    }
+
+    .bulb-btn{
+      background:transparent;border:0;cursor:pointer;padding:0;outline:none;
+      display:inline-grid;place-items:center;
+      transition:transform .15s ease;
+    }
+    .bulb-btn:active{transform:scale(.98)}
+
+    /* Bulb SVG sizes */
+    svg{width:140px;height:200px;display:block}
+
+    /* Glow when on */
+    .glow{
+      filter: drop-shadow(0 10px 40px rgba(255,196,66,0.25))
+              drop-shadow(0 4px 18px rgba(255,196,66,0.18));
+      transition:filter .3s ease;
+    }
+
+    .state-text{font-weight:600}
+
+    /* background change when on */
+    .card.on{background: linear-gradient(180deg, rgba(255,230,150,0.12), rgba(0,0,0,0.08));}
+    .card.on body{}
+
+    /* simple switch */
+    .switch{
+      margin-top:8px;
+      display:inline-flex;align-items:center;gap:8px;
+      font-size:13px;color:var(--muted)
+    }
+
+    .kbd{background:rgba(255,255,255,0.04);padding:4px 8px;border-radius:6px;font-weight:600}
+
+    /* Accessible focus ring */
+    .bulb-btn:focus-visible{box-shadow:0 0 0 4px rgba(255,210,90,0.12);border-radius:16px}
+
+    footer{margin-top:18px;font-size:12px;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <main class="card" id="card">
+    <h1>Kontrol Lampu</h1>
+    <p>Klik bola lampu atau tekan <span class="kbd">Enter</span>/<span class="kbd">Space</span> untuk hidup/mati.</p>
+
+    <div class="lamp-wrap">
+      <button id="bulbBtn" class="bulb-btn" aria-pressed="false" aria-label="Tombol nyalakan lampu">
+        <!-- Simple bulb SVG. Color changes by JS by toggling the "on" class on #card -->
+        <svg viewBox="0 0 120 180" role="img" aria-hidden="true" id="bulbSvg">
+          <defs>
+            <radialGradient id="g1" cx="50%" cy="30%" r="60%">
+              <stop offset="0%" stop-color="#fff7c0" stop-opacity="1" />
+              <stop offset="40%" stop-color="#ffd166" stop-opacity="0.95" />
+              <stop offset="100%" stop-color="#ff9f1c" stop-opacity="0.7" />
+            </radialGradient>
+            <radialGradient id="g2" cx="30%" cy="20%" r="60%">
+              <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9" />
+              <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+            </radialGradient>
+          </defs>
+
+          <!-- light glow (only visible when on) -->
+          <ellipse id="glow" cx="60" cy="70" rx="48" ry="36" fill="url(#g1)" opacity="0" />
+
+          <!-- bulb glass -->
+          <path id="glass" d="M60 10 C85 10 100 30 100 58 C100 95 77 118 77 132 C77 145 69 155 60 155 C51 155 43 145 43 132 C43 118 20 95 20 58 C20 30 35 10 60 10 Z" fill="#e6eef9" stroke="#b8c6d8" stroke-width="1.2" />
+
+          <!-- highlight -->
+          <path d="M46 36 C52 28 72 26 84 44" fill="none" stroke="url(#g2)" stroke-width="5" stroke-linecap="round" opacity="0.9" />
+
+          <!-- screw -->
+          <rect x="44" y="146" width="32" height="12" rx="3" fill="#9aa4bd" />
+          <rect x="48" y="158" width="24" height="10" rx="3" fill="#7c8796" />
+        </svg>
+      </button>
+
+      <div class="switch">
+        <div class="state-text" id="stateText">Mati</div>
+      </div>
+    </div>
+
+    <footer>Tip: klik lagi untuk membalik status.</footer>
+  </main>
+
+  <script>
+    (function(){
+      const btn = document.getElementById('bulbBtn');
+      const card = document.getElementById('card');
+      const stateText = document.getElementById('stateText');
+      const glow = document.getElementById('glow');
+      const glass = document.getElementById('glass');
+
+      // initial state
+      let on = false;
+
+      function updateUI(){
+        btn.setAttribute('aria-pressed', String(on));
+        card.classList.toggle('on', on);
+        stateText.textContent = on ? 'Hidup' : 'Mati';
+
+        if(on){
+          // bulb glass warm
+          glass.setAttribute('fill', 'url(#g1)');
+          glow.setAttribute('opacity','1');
+          document.body.style.background = 'linear-gradient(180deg, #0b2a0b, #071315)';
+        } else {
+          glass.setAttribute('fill', '#e6eef9');
+          glow.setAttribute('opacity','0');
+          document.body.style.background = 'linear-gradient(180deg,var(--bg) 0%, #071023 100%)';
+        }
+      }
+
+      // toggle function
+      function toggle(){
+        on = !on;
+        updateUI();
+      }
+
+      // click handler
+      btn.addEventListener('click', function(e){
+        toggle();
+      });
+
+      // keyboard accessibility: Enter or Space toggles
+      btn.addEventListener('keydown', function(e){
+        if(e.key === 'Enter' || e.key === ' '){
+          e.preventDefault();
+          toggle();
+        }
+      });
+
+      // initialize
+      updateUI();
+    })();
+  </script>
+</body>
+</html>
